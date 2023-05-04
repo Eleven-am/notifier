@@ -1,9 +1,14 @@
 {
-  "name": "notifier",
-  "version": "1.0.0",
+  "name": "@eleven-am/notifier",
+  "version": "0.0.3",
   "description": "",
   "scripts": {
-    "test": "jest --coverage --verbose --watchAll"
+    "test": "jest --coverage --verbose --watchAll",
+    "publishToNpm": "npm version patch && npm publish",
+    "build": "tsc"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [],
   "author": "Roy OSSAI",

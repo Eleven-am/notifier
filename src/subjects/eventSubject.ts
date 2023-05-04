@@ -19,17 +19,17 @@ export class EventSubject<EventType extends Record<string, any>> {
      * @param event - The event to subscribe to
      * @param observer - The observer to subscribe
      */
-    subscribe (event: keyof EventType, observer: Subscriber<EventType[keyof EventType]>): Unsubscribe {
-        const observers = this.#observers.get(event) ?? new Set<Subscriber<EventType[keyof EventType]>>();
+    subscribe <Event extends keyof EventType> (event: Event, observer: Subscriber<EventType[Event]>): Unsubscribe {
+        const observers = this.#observers.get(event) ?? new Set<Subscriber<EventType[Event]>>();
 
         observers.add(observer);
-        this.#observers.set(event, observers);
+        this.#observers.set(event, observers as Set<Subscriber<EventType[keyof EventType]>>);
 
         return () => {
             const observers = this.#observers.get(event);
 
             if (observers) {
-                observers.delete(observer);
+                observers.delete(observer as Subscriber<EventType[keyof EventType]>);
             }
         };
     }

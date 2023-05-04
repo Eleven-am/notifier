@@ -16,26 +16,26 @@ export class BaseNotifier<Data> {
         this.#subject = new Subject<Data>();
     }
 
-    get state (): Readonly<Data> {
-        return this.#state;
-    }
-
-    set state (state: Data) {
-        this.#state = state;
-        this.#subject.publish(state);
-    }
-
-    get serverState (): Readonly<Data> {
+    protected get serverState (): Readonly<Data> {
         return this.#serverState ?? this.#initialState;
     }
 
-    set serverState (state: Data) {
+    protected set serverState (state: Data) {
         if (this.#serverState) {
             return;
         }
 
         this.#serverState = state;
         this.state = state;
+    }
+
+    protected get state (): Readonly<Data> {
+        return this.#state;
+    }
+
+    protected set state (state: Data) {
+        this.#state = state;
+        this.#subject.publish(state);
     }
 
     subscribe (callback: (state: Data) => void): Unsubscribe {

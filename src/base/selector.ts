@@ -2,13 +2,12 @@ import { BaseNotifier } from './base';
 import { Subject, Unsubscribe } from '../subjects/subject';
 import { deepCompare } from '../utils/deepCompare';
 
-type GetFunction = <NotifierState>(notifier: BaseNotifier<NotifierState>) => NotifierState;
+type GetFunction = <NotifierState>(notifier: BaseNotifier<NotifierState>) => Readonly<NotifierState>;
 type SetFunction = <NotifierState>(notifier: BaseNotifier<NotifierState>, state: NotifierState) => void;
 type SelectorHandler<ReturnedState> = (get: GetFunction, set: SetFunction) => Promise<ReturnedState> | ReturnedState;
 export type SelectorType<DataType> = ReturnType<typeof selector<DataType>>;
 
 export function selector<ReturnedState> (selector: SelectorHandler<ReturnedState>) {
-    const subscriptions = new Set<Unsubscribe>();
     const notifiers = new Set<BaseNotifier<any>>();
     const subject = new Subject<ReturnedState>();
 
@@ -17,7 +16,7 @@ export function selector<ReturnedState> (selector: SelectorHandler<ReturnedState
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
         subscribeToNotifier(notifier);
 
-        return notifier.state;
+        return notifier['state'];
     };
 
     const getServer: GetFunction = (notifier) => {
@@ -25,15 +24,15 @@ export function selector<ReturnedState> (selector: SelectorHandler<ReturnedState
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
         subscribeToNotifier(notifier);
 
-        return notifier.serverState;
+        return notifier['serverState'];
     };
 
     const set: SetFunction = (notifier, state) => {
-        if (notifiers.has(notifier)) {
+        if (!notifiers.has(notifier)) {
             return;
         }
 
-        notifier.state = state;
+        notifier['state'] = state;
     };
 
     let returnedState: ReturnedState;
@@ -51,14 +50,14 @@ export function selector<ReturnedState> (selector: SelectorHandler<ReturnedState
             return;
         }
 
-        subscriptions.add(notifier.subscribe(async () => {
+        notifier.subscribe(async () => {
             const newState = await selector(get, set);
 
             if (!deepCompare(returnedState, newState)) {
                 subject.publish(newState);
                 returnedState = newState;
             }
-        }));
+        });
     }
 
     function subscribe (callback: (state: ReturnedState) => void): Unsubscribe {

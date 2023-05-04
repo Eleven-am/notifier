@@ -30,7 +30,7 @@ export function useNotifier<State, ReturnType = State> (
         let state: State;
 
         if (notifier instanceof BaseNotifier) {
-            state = notifier.serverState;
+            state = notifier['serverState'];
         } else {
             state = notifier.getServerSnapshot();
         }
@@ -46,7 +46,7 @@ export function useNotifier<State, ReturnType = State> (
         let state: State;
 
         if (notifier instanceof BaseNotifier) {
-            state = notifier.state;
+            state = notifier['state'];
         } else {
             state = notifier.getSnapshot();
         }
