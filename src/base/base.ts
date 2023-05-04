@@ -42,15 +42,15 @@ export class BaseNotifier<Data> {
         return this.#subject.subscribe(callback);
     }
 
+    reset (): void {
+        this.#state = this.#initialState;
+        this.#serverState = null;
+    }
+
     protected updateState (state: Partial<Data>): void {
         this.state = {
             ...this.state,
             ...state,
         };
-    }
-
-    protected reset (): void {
-        this.#state = this.#initialState;
-        this.#serverState = null;
     }
 }
