@@ -1,7 +1,12 @@
+import { useSyncExternalStore } from 'react';
+
 import { BaseNotifier } from './base';
-import { Subject, Unsubscribe } from '../subjects/subject';
+import { Subject } from '../subjects/subject';
 import { deepCompare } from '../utils/deepCompare';
 
+
+type SelectorFunc<State, ReturnType> = (state: State) => ReturnType;
+type UseNotifierHook<State> = () => <ReturnType = State>(selector?: SelectorFunc<State, ReturnType>) => ReturnType;
 type GetFunction = <NotifierState>(notifier: BaseNotifier<NotifierState>) => Readonly<NotifierState>;
 type SetFunction = <NotifierState>(notifier: BaseNotifier<NotifierState>, state: NotifierState) => void;
 type SelectorHandler<ReturnedState> = (get: GetFunction, set: SetFunction) => Promise<ReturnedState> | ReturnedState;
@@ -73,16 +78,29 @@ export function selector<ReturnedState> (selector: SelectorHandler<ReturnedState
         });
     }
 
-    function subscribe (callback: (state: ReturnedState) => void): Unsubscribe {
-        return subject.subscribe(callback);
+    function createHook (): UseNotifierHook<ReturnedState> {
+        return () => <ReturnType>(selector?: SelectorFunc<ReturnedState, ReturnType>): ReturnType => {
+            let clientState = selector ? selector(returnedState) : returnedState as unknown as ReturnType;
+            const newServerState = selector ? selector(serverState) : serverState as unknown as ReturnType;
+
+            const subscribe = (callback: (state: ReturnType) => void) => subject.subscribe((state) => {
+                const newState = selector ? selector(state) : state as unknown as ReturnType;
+
+                if (!deepCompare(clientState, newState)) {
+                    clientState = newState;
+
+                    return callback(newState);
+                }
+            });
+
+            const getSnapshot = () => clientState;
+            const getServerSnapshot = () => newServerState;
+
+            return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+        };
     }
 
-    const getSnapshot = () => returnedState;
-    const getServerSnapshot = () => serverState;
-
     return {
-        subscribe,
-        getSnapshot,
-        getServerSnapshot,
+        createHook,
     };
 }

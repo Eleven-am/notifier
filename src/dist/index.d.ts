@@ -1,8 +1,7 @@
-import { Notifier, selector, useNotifier, EventNotifier } from './types';
+import { Notifier, selector, EventNotifier } from './types';
 
 export {
     Notifier,
     EventNotifier,
     selector,
-    useNotifier,
 };

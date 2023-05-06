@@ -36,6 +36,6 @@ declare class Selector<DataType> {}
 
 declare function selector<ReturnedState>(selector: SelectorHandler<ReturnedState>): Selector<ReturnedState>;
 
-type SelectorFunc<State, ReturnType> = (state: State) => Promise<ReturnType> | ReturnType;
+type SelectorFunc<State, ReturnType> = (state: State) => ReturnType;
 
-declare function useNotifier<State, ReturnType = State>(notifier: BaseNotifier<State> | Selector<State>, selector?: SelectorFunc<State, ReturnType>): ReturnType;
+type UseNotifierHook<State> = () => <ReturnType = State>(selector?: SelectorFunc<State, ReturnType>) => ReturnType;

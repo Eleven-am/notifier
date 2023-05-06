@@ -1,4 +1,11 @@
-import { Subject, Unsubscribe } from '../subjects/subject';
+import { useSyncExternalStore } from 'react';
+
+import { Subject, Unsubscribe, Subscriber } from '../subjects/subject';
+import { deepCompare } from '../utils/deepCompare';
+
+type SelectorFunc<State, ReturnType> = (state: State) => ReturnType;
+
+type UseNotifierHook<State> = () => <ReturnType = State>(selector?: SelectorFunc<State, ReturnType>) => ReturnType;
 
 export class BaseNotifier<Data> {
     readonly #subject: Subject<Data>;
@@ -38,13 +45,35 @@ export class BaseNotifier<Data> {
         this.#subject.publish(state);
     }
 
-    subscribe (callback: (state: Data) => void): Unsubscribe {
-        return this.#subject.subscribe(callback);
-    }
-
     reset (): void {
         this.#state = this.#initialState;
         this.#serverState = null;
+    }
+
+    createHook (): UseNotifierHook<Data> {
+        return () => <ReturnType>(selector?: SelectorFunc<Data, ReturnType>): ReturnType => {
+            const serverState = selector ? selector(this.serverState) : this.serverState as unknown as ReturnType;
+            let clientState = selector ? selector(this.state) : this.state as unknown as ReturnType;
+
+            const subscribe = (callback: (state: ReturnType) => void) => this.#subject.subscribe((state) => {
+                const newState = selector ? selector(state) : state as unknown as ReturnType;
+
+                if (!deepCompare(clientState, newState)) {
+                    clientState = newState;
+
+                    return callback(newState);
+                }
+            });
+
+            const getSnapshot = () => clientState;
+            const getServerSnapshot = () => serverState;
+
+            return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+        };
+    }
+
+    subscribe (subscriber: Subscriber<Data>): Unsubscribe {
+        return this.#subject.subscribe(subscriber);
     }
 
     protected updateState (state: Partial<Data>): void {
