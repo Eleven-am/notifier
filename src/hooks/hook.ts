@@ -2,9 +2,10 @@ import { useSyncExternalStore } from 'react';
 
 import { BaseNotifier } from '../base/base';
 import { SelectorType } from '../base/selector';
+import { Subject, Subscriber, Unsubscribe } from '../subjects/subject';
 import { deepCompare } from '../utils/deepCompare';
 
-type Selector<State, ReturnType> = (state: State) => Promise<ReturnType> | ReturnType;
+type Selector<State, ReturnType> = (state: State) => ReturnType;
 
 export function useNotifier<State, ReturnType = State> (
     notifier: BaseNotifier<State> | SelectorType<State>,
@@ -26,49 +27,51 @@ export function useNotifier<State, ReturnType = State> (
         throw new Error('Notifier object must have subscribe, getSnapshot, and getServerSnapshot methods');
     }
 
-    const getServerState = () => {
-        let state: State;
+    const subject = new Subject<ReturnType>();
+    let previousState: ReturnType;
 
-        if (notifier instanceof BaseNotifier) {
-            state = notifier['serverState'];
-        } else {
-            state = notifier.getServerSnapshot();
+    function performSelection (state: State) {
+        if (selector) {
+            return selector(state);
         }
 
-        const selectorState = selector ? selector(state) : state;
+        return state as unknown as ReturnType;
+    }
 
-        return selectorState as ReturnType;
-    };
+    function getClientState () {
+        notifier.subscribe((state) => {
+            const newState = performSelection(state);
+
+            if (!deepCompare(previousState, newState)) {
+                previousState = newState;
+                subject.publish(newState);
+            }
+        });
+
+        if (notifier instanceof BaseNotifier) {
+            return performSelection(notifier['state']);
+        }
+
+        return performSelection(notifier.getSnapshot());
+    }
+
+    function getServerState () {
+        if (notifier instanceof BaseNotifier) {
+            return performSelection(notifier['serverState']);
+        }
+
+        return performSelection(notifier.getServerSnapshot());
+    }
+
+    function subscribe (callback: Subscriber<ReturnType>): Unsubscribe {
+        return subject.subscribe(callback);
+    }
 
     const serverState = getServerState();
 
-    const getState = () => {
-        let state: State;
+    previousState = getClientState();
 
-        if (notifier instanceof BaseNotifier) {
-            state = notifier['state'];
-        } else {
-            state = notifier.getSnapshot();
-        }
-
-        const selectorState = selector ? selector(state) : state;
-
-        return selectorState as ReturnType;
-    };
-
-    let oldState = getState();
-
-    const subscribe = (callback: (state: ReturnType) => void) => notifier.subscribe((state) => {
-        const newState = selector ? selector(state) : state;
-
-        if (!deepCompare(oldState, newState)) {
-            oldState = newState as ReturnType;
-
-            return callback(newState as ReturnType);
-        }
-    });
-
-    const getSnapshot = () => oldState;
+    const getSnapshot = () => previousState;
     const getServerSnapshot = () => serverState;
 
     return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);

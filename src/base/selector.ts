@@ -12,7 +12,6 @@ export function selector<ReturnedState> (selector: SelectorHandler<ReturnedState
     const subject = new Subject<ReturnedState>();
 
     const get: GetFunction = (notifier) => {
-        notifiers.add(notifier);
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
         subscribeToNotifier(notifier);
 
@@ -20,7 +19,6 @@ export function selector<ReturnedState> (selector: SelectorHandler<ReturnedState
     };
 
     const getServer: GetFunction = (notifier) => {
-        notifiers.add(notifier);
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
         subscribeToNotifier(notifier);
 
@@ -28,28 +26,43 @@ export function selector<ReturnedState> (selector: SelectorHandler<ReturnedState
     };
 
     const set: SetFunction = (notifier, state) => {
-        if (!notifiers.has(notifier)) {
-            return;
-        }
-
         notifier['state'] = state;
     };
 
     let returnedState: ReturnedState;
     let serverState: ReturnedState;
 
-    const initialiseValues = async () => {
-        returnedState = await selector(get, set);
-        serverState = await selector(getServer, set);
+    const initialiseValues = () => {
+        const serverPromise = selector(getServer, set);
+        const clientPromise = selector(get, set);
+
+        if (serverPromise instanceof Promise) {
+            serverPromise.then((state) => {
+                serverState = state;
+            });
+        } else {
+            serverState = serverPromise;
+        }
+
+        if (clientPromise instanceof Promise) {
+            clientPromise.then((state) => {
+                returnedState = state;
+                subject.publish(state);
+            });
+        } else {
+            returnedState = clientPromise;
+            subject.publish(clientPromise);
+        }
     };
 
-    void initialiseValues();
+    initialiseValues();
 
     function subscribeToNotifier (notifier: BaseNotifier<any>) {
         if (notifiers.has(notifier)) {
             return;
         }
 
+        notifiers.add(notifier);
         notifier.subscribe(async () => {
             const newState = await selector(get, set);
 
