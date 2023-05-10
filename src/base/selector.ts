@@ -5,29 +5,37 @@ import { Subject } from '../subjects/subject';
 import { deepCompare } from '../utils/deepCompare';
 
 
+type SelectorHook<State> = ReturnType<typeof selector<State>>;
 type SelectorFunc<State, ReturnType> = (state: State) => ReturnType;
-type UseNotifierHook<State> = () => <ReturnType = State>(selector?: SelectorFunc<State, ReturnType>) => ReturnType;
-type GetFunction = <NotifierState>(notifier: BaseNotifier<NotifierState>) => Readonly<NotifierState>;
+type UseNotifierHook<State> = <ReturnType = State>(selector?: SelectorFunc<State, ReturnType>) => ReturnType;
+type GetFunction = <NotifierState>(notifier: BaseNotifier<NotifierState> | SelectorHook<NotifierState>) => Readonly<NotifierState>;
 type SetFunction = <NotifierState>(notifier: BaseNotifier<NotifierState>, state: NotifierState) => void;
 type SelectorHandler<ReturnedState> = (get: GetFunction, set: SetFunction) => Promise<ReturnedState> | ReturnedState;
-export type SelectorType<DataType> = ReturnType<typeof selector<DataType>>;
 
 export function selector<ReturnedState> (selector: SelectorHandler<ReturnedState>) {
-    const notifiers = new Set<BaseNotifier<any>>();
+    const notifiers = new Set<BaseNotifier<any> | SelectorHook<any>>();
     const subject = new Subject<ReturnedState>();
 
     const get: GetFunction = (notifier) => {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
         subscribeToNotifier(notifier);
 
-        return notifier['state'];
+        if (notifier instanceof BaseNotifier) {
+            return notifier['state'];
+        }
+
+        return notifier.getSnapshot();
     };
 
     const getServer: GetFunction = (notifier) => {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
         subscribeToNotifier(notifier);
 
-        return notifier['serverState'];
+        if (notifier instanceof BaseNotifier) {
+            return notifier['serverState'];
+        }
+
+        return notifier.getServerSnapshot();
     };
 
     const set: SetFunction = (notifier, state) => {
@@ -62,7 +70,7 @@ export function selector<ReturnedState> (selector: SelectorHandler<ReturnedState
 
     initialiseValues();
 
-    function subscribeToNotifier (notifier: BaseNotifier<any>) {
+    function subscribeToNotifier (notifier: BaseNotifier<any> | SelectorHook<any>) {
         if (notifiers.has(notifier)) {
             return;
         }
@@ -79,7 +87,7 @@ export function selector<ReturnedState> (selector: SelectorHandler<ReturnedState
     }
 
     function createHook (): UseNotifierHook<ReturnedState> {
-        return () => <ReturnType>(selector?: SelectorFunc<ReturnedState, ReturnType>): ReturnType => {
+        return <ReturnType>(selector?: SelectorFunc<ReturnedState, ReturnType>): ReturnType => {
             let clientState = selector ? selector(returnedState) : returnedState as unknown as ReturnType;
             const newServerState = selector ? selector(serverState) : serverState as unknown as ReturnType;
 
@@ -102,5 +110,8 @@ export function selector<ReturnedState> (selector: SelectorHandler<ReturnedState
 
     return {
         createHook,
+        getServerSnapshot: () => serverState,
+        getSnapshot: () => returnedState,
+        subscribe: subject.subscribe,
     };
 }

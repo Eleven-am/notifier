@@ -1,4 +1,4 @@
-type GetFunction = <NotifierState>(notifier: Notifier<NotifierState>) => Readonly<NotifierState>;
+type GetFunction = <NotifierState>(notifier: Notifier<NotifierState> | Selector<NotifierState>) => Readonly<NotifierState>;
 
 type SetFunction = <NotifierState>(notifier: Notifier<NotifierState>, state: NotifierState) => void;
 
@@ -6,9 +6,11 @@ type SelectorHandler<ReturnedState> = (get: GetFunction, set: SetFunction) => Pr
 
 type SelectorFunc<State, ReturnType> = (state: State) => ReturnType;
 
-type UseNotifierHook<State> = () => <ReturnType = State>(selector?: SelectorFunc<State, ReturnType>) => ReturnType;
+type UseNotifierHook<State> = <ReturnType = State>(selector?: SelectorFunc<State, ReturnType>) => ReturnType;
 
 type Unsubscribe = () => void;
+
+type Observer<Data> = (data: Data) => void;
 
 export declare class Notifier<Data> {
     constructor(initialState: Data);

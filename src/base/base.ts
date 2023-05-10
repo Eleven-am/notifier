@@ -5,7 +5,7 @@ import { deepCompare } from '../utils/deepCompare';
 
 type SelectorFunc<State, ReturnType> = (state: State) => ReturnType;
 
-type UseNotifierHook<State> = () => <ReturnType = State>(selector?: SelectorFunc<State, ReturnType>) => ReturnType;
+type UseNotifierHook<State> = <ReturnType = State>(selector?: SelectorFunc<State, ReturnType>) => ReturnType;
 
 export class BaseNotifier<Data> {
     readonly #subject: Subject<Data>;
@@ -51,7 +51,7 @@ export class BaseNotifier<Data> {
     }
 
     createHook (): UseNotifierHook<Data> {
-        return () => <ReturnType>(selector?: SelectorFunc<Data, ReturnType>): ReturnType => {
+        return <ReturnType>(selector?: SelectorFunc<Data, ReturnType>): ReturnType => {
             const serverState = selector ? selector(this.serverState) : this.serverState as unknown as ReturnType;
             let clientState = selector ? selector(this.state) : this.state as unknown as ReturnType;
 
