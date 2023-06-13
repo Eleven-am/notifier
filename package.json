@@ -10,7 +10,19 @@
   "publishConfig": {
     "access": "public"
   },
-  "keywords": [],
+  "keywords": [
+    "react",
+    "state management",
+    "global state",
+    "centralized state",
+    "hooks",
+    "encapsulation",
+    "code organization",
+    "reusability",
+    "event-based communication",
+    "selectors",
+    "reactive architecture"
+  ],
   "author": "Roy OSSAI",
   "license": "GPL-3.0",
   "main": "dist/index.js",

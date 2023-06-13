@@ -3,9 +3,15 @@ import { useSyncExternalStore } from 'react';
 import { Subject, Unsubscribe, Subscriber } from '../subjects/subject';
 import { deepCompare } from '../utils/deepCompare';
 
+type PublicMethods<T> = {
+    [K in keyof T]: T[K] extends (...args: any[]) => any ? T[K] : never;
+};
+
 type SelectorFunc<State, ReturnType> = (state: State) => ReturnType;
 
-type UseNotifierHook<State> = <ReturnType = State>(selector?: SelectorFunc<State, ReturnType>) => ReturnType;
+type UseNotifierHook<State, Class> = <ReturnType = State>(selector?: SelectorFunc<State, ReturnType>) => {
+    state: ReturnType;
+} & PublicMethods<Class>;
 
 export class BaseNotifier<Data> {
     readonly #subject: Subject<Data>;
@@ -50,8 +56,8 @@ export class BaseNotifier<Data> {
         this.#serverState = null;
     }
 
-    createHook (): UseNotifierHook<Data> {
-        return <ReturnType>(selector?: SelectorFunc<Data, ReturnType>): ReturnType => {
+    createHook (): UseNotifierHook<Data, this> {
+        return <ReturnType>(selector?: SelectorFunc<Data, ReturnType>) => {
             const serverState = selector ? selector(this.serverState) : this.serverState as unknown as ReturnType;
             let clientState = selector ? selector(this.state) : this.state as unknown as ReturnType;
 
@@ -68,7 +74,13 @@ export class BaseNotifier<Data> {
             const getSnapshot = () => clientState;
             const getServerSnapshot = () => serverState;
 
-            return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+            const data = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+            const methods = this.getPublicMethods();
+
+            return {
+                state: data,
+                ...methods,
+            };
         };
     }
 
@@ -81,5 +93,17 @@ export class BaseNotifier<Data> {
             ...this.state,
             ...state,
         };
+    }
+
+    private getPublicMethods (): PublicMethods<this> {
+        const methods: PublicMethods<this> = {} as PublicMethods<this>;
+
+        for (const key in this) {
+            if (typeof this[key] === 'function') {
+                methods[key] = (this[key] as Function).bind(this);
+            }
+        }
+
+        return methods;
     }
 }
