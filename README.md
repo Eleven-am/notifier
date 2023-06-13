@@ -46,7 +46,7 @@ const personNotifier = new PersonNotifier({ name: 'John Doe', age: 25 });
 3. Create a hook to access and update the person's state:
 
 ```typescript
-const usePerson = personNotifier.createHook();
+const usePerson = personNotifier.createHook().useHook;
 ```
 
 4. Use the created hook within your functional components:
@@ -54,7 +54,7 @@ const usePerson = personNotifier.createHook();
 ```typescript
 const PersonComponent: React.FC = () => {
   // The transform function in the usePerson hook is optional
-  const { state, setName, setAge } = usePerson(state => ({
+  const { name, age, setName, setAge } = usePerson(state => ({
     name: state.name.toUpperCase(),
     age: state.age,
   }));
@@ -63,10 +63,10 @@ const PersonComponent: React.FC = () => {
 
   return (
     <div>
-      <p>Name: {state.name}</p>
-      <p>Age: {state.age}</p>
-      <input type="text" value={state.name} onChange={(e) => setName(e.target.value)} />
-      <input type="number" value={state.age} onChange={(e) => setAge(Number(e.target.value))} />
+      <p>Name: {name}</p>
+      <p>Age: {age}</p>
+      <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
+      <input type="number" value={age} onChange={(e) => setAge(Number(e.target.value))} />
     </div>
   );
 };
@@ -157,7 +157,7 @@ class MyEventNotifier extends EventNotifier<MyState> {
 3. Create a hook to access and update the state:
 
 ```typescript
-const useMyEventNotifier = new MyEventNotifier(myInitialState).createHook();
+const useMyEventNotifier = new MyEventNotifier(myInitialState).createHook().useHook;
 ```
 
 4. Use the created hook within your functional components. Subscribe to the `dataUpdated` event and handle it using a callback function:

@@ -9,9 +9,11 @@ type PublicMethods<T> = {
 
 type SelectorFunc<State, ReturnType> = (state: State) => ReturnType;
 
-type UseNotifierHook<State, Class> = <ReturnType = State>(selector?: SelectorFunc<State, ReturnType>) => {
-    state: ReturnType;
-} & PublicMethods<Class>;
+export type UseNotifierHook<Data, Class extends BaseNotifier<Data>> = {
+    useValue: <ReturnType = Data>(selector?: SelectorFunc<Data, ReturnType>) => ReturnType;
+    useSetState: () => PublicMethods<Class>;
+    useHook: <ReturnType = Data>(selector?: SelectorFunc<Data, ReturnType>) => ReturnType & PublicMethods<Class>;
+}
 
 export class BaseNotifier<Data> {
     readonly #subject: Subject<Data>;
@@ -56,8 +58,8 @@ export class BaseNotifier<Data> {
         this.#serverState = null;
     }
 
-    createHook (): UseNotifierHook<Data, this> {
-        return <ReturnType>(selector?: SelectorFunc<Data, ReturnType>) => {
+    createHooks (): UseNotifierHook<Data, this> {
+        const useValue = <ReturnType>(selector?: SelectorFunc<Data, ReturnType>) => {
             const serverState = selector ? selector(this.serverState) : this.serverState as unknown as ReturnType;
             let clientState = selector ? selector(this.state) : this.state as unknown as ReturnType;
 
@@ -74,13 +76,24 @@ export class BaseNotifier<Data> {
             const getSnapshot = () => clientState;
             const getServerSnapshot = () => serverState;
 
-            const data = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-            const methods = this.getPublicMethods();
+            return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+        };
+
+        const useSetState = (): PublicMethods<this> => this._getPublicMethods();
+
+        const useHook = <ReturnType>(selector?: SelectorFunc<Data, ReturnType>) => {
+            const value = useValue(selector);
 
             return {
-                state: data,
-                ...methods,
+                ...value,
+                ...useSetState(),
             };
+        };
+
+        return {
+            useHook,
+            useValue,
+            useSetState,
         };
     }
 
@@ -95,7 +108,7 @@ export class BaseNotifier<Data> {
         };
     }
 
-    private getPublicMethods (): PublicMethods<this> {
+    private _getPublicMethods (): PublicMethods<this> {
         const methods: PublicMethods<this> = {} as PublicMethods<this>;
 
         for (const key in this) {
