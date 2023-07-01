@@ -96,16 +96,26 @@ export class BaseNotifier<Data> {
     }
 
     private _getPublicMethods (): PublicMethods<this> {
-        const methods: PublicMethods<this> = {} as PublicMethods<this>;
+        const isAccessor = (prop: string) => {
+            const obj = Object.getPrototypeOf(this);
+            const descriptor = Object.getOwnPropertyDescriptor(obj, prop);
 
-        for (const key in this) {
-            if (typeof this[key] === 'function') {
+            return Boolean(descriptor && (descriptor.get || descriptor.set));
+        };
+
+        return Object.getOwnPropertyNames(Object.getPrototypeOf(this))
+            .filter((name) => !name.startsWith('_'))
+            .filter((name) => name !== 'constructor')
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            .filter((name) => typeof this[name] === 'function')
+            .filter((name) => !isAccessor(name))
+            .reduce((methods, name) => {
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
-                methods[key] = (this[key] as Function).bind(this);
-            }
-        }
+                methods[name] = this[name].bind(this);
 
-        return methods;
+                return methods;
+            }, {} as PublicMethods<this>);
     }
 }
