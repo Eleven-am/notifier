@@ -80,7 +80,7 @@ export class BaseNotifier<Data> {
         };
     }
 
-    createSetter (): UseSetterHook<this> {
+    createActors (): UseSetterHook<this> {
         return () => this._getPublicMethods();
     }
 

@@ -8,7 +8,7 @@ type ClassMethods<T> = {
 
 type PublicMethods<T> = Omit<ClassMethods<T>, keyof Notifier<any>>;
 
-type UseSetterHook<Class extends Notifier<any>> = () => PublicMethods<Class>;
+type UseActorsHook<Class extends Notifier<any>> = () => PublicMethods<Class>;
 
 type SelectorHandler<ReturnedState> = (get: GetFunction, set: SetFunction) => Promise<ReturnedState> | ReturnedState;
 
@@ -33,7 +33,7 @@ export declare class Notifier<Data> {
 
     createHook(): UseNotifierHook<Data>;
 
-    createSetter (): UseSetterHook<this>;
+    createActors (): UseActorsHook<this>;
 
     reset(): void;
 

@@ -47,7 +47,7 @@ const personNotifier = new PersonNotifier({ name: 'John Doe', age: 25 });
 
 ```typescript
 const usePerson = personNotifier.createHook();
-const usePersonSetter = personNotifier.createSetter();
+const usePersonSetter = personNotifier.createActors();
 ```
 
 4. Use the created hook within your functional components:
@@ -162,7 +162,7 @@ class MyEventNotifier extends EventNotifier<MyState> {
 ```typescript
 const myEventNotifier = new MyEventNotifier(initialState);
 const useMyEventNotifier = myEventNotifier.createHook()
-const useMyEventNotifierSetter = myEventNotifier.createSetter()
+const useMyEventNotifierSetter = myEventNotifier.createActors()
 ```
 
 4. Use the created hook within your functional components. Subscribe to the `dataUpdated` event and handle it using a callback function:
