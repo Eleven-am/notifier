@@ -3,17 +3,17 @@ import { useSyncExternalStore } from 'react';
 import { Subject, Unsubscribe, Subscriber } from '../subjects/subject';
 import { deepCompare } from '../utils/deepCompare';
 
-type PublicMethods<T> = {
+type ClassMethods<T> = {
     [K in keyof T]: T[K] extends (...args: any[]) => any ? T[K] : never;
 };
 
+type PublicMethods<T> = Omit<ClassMethods<T>, keyof BaseNotifier<any>>;
+
+type UseSetterHook<Notifier extends BaseNotifier<any>> = () => PublicMethods<Notifier>;
+
 type SelectorFunc<State, ReturnType> = (state: State) => ReturnType;
 
-export type UseNotifierHook<Data, Class extends BaseNotifier<Data>> = {
-    useValue: <ReturnType = Data>(selector?: SelectorFunc<Data, ReturnType>) => ReturnType;
-    useSetState: () => PublicMethods<Class>;
-    useHook: <ReturnType = Data>(selector?: SelectorFunc<Data, ReturnType>) => ReturnType & PublicMethods<Class>;
-}
+export type UseNotifierHook<Data> =<ReturnType = Data>(selector?: SelectorFunc<Data, ReturnType>) => ReturnType;
 
 export class BaseNotifier<Data> {
     readonly #subject: Subject<Data>;
@@ -58,8 +58,8 @@ export class BaseNotifier<Data> {
         this.#serverState = null;
     }
 
-    createHooks (): UseNotifierHook<Data, this> {
-        const useValue = <ReturnType>(selector?: SelectorFunc<Data, ReturnType>) => {
+    createHook (): UseNotifierHook<Data> {
+        return <ReturnType>(selector?: SelectorFunc<Data, ReturnType>) => {
             const serverState = selector ? selector(this.serverState) : this.serverState as unknown as ReturnType;
             let clientState = selector ? selector(this.state) : this.state as unknown as ReturnType;
 
@@ -78,23 +78,10 @@ export class BaseNotifier<Data> {
 
             return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
         };
+    }
 
-        const useSetState = (): PublicMethods<this> => this._getPublicMethods();
-
-        const useHook = <ReturnType>(selector?: SelectorFunc<Data, ReturnType>) => {
-            const value = useValue(selector);
-
-            return {
-                ...value,
-                ...useSetState(),
-            };
-        };
-
-        return {
-            useHook,
-            useValue,
-            useSetState,
-        };
+    createSetter (): UseSetterHook<this> {
+        return () => this._getPublicMethods();
     }
 
     subscribe (subscriber: Subscriber<Data>): Unsubscribe {
@@ -113,6 +100,8 @@ export class BaseNotifier<Data> {
 
         for (const key in this) {
             if (typeof this[key] === 'function') {
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
                 methods[key] = (this[key] as Function).bind(this);
             }
         }

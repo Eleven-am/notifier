@@ -2,6 +2,14 @@ type GetFunction = <NotifierState>(notifier: Notifier<NotifierState> | Selector<
 
 type SetFunction = <NotifierState>(notifier: Notifier<NotifierState>, state: NotifierState) => void;
 
+type ClassMethods<T> = {
+    [K in keyof T]: T[K] extends (...args: any[]) => any ? T[K] : never;
+};
+
+type PublicMethods<T> = Omit<ClassMethods<T>, keyof Notifier<any>>;
+
+type UseSetterHook<Class extends Notifier<any>> = () => PublicMethods<Class>;
+
 type SelectorHandler<ReturnedState> = (get: GetFunction, set: SetFunction) => Promise<ReturnedState> | ReturnedState;
 
 type SelectorFunc<State, ReturnType> = (state: State) => ReturnType;
@@ -15,15 +23,17 @@ type Observer<Data> = (data: Data) => void;
 export declare class Notifier<Data> {
     constructor(initialState: Data);
 
-    protected get serverState(): Readonly<Data>;
-
-    protected set serverState(state: Data);
-
     protected get state(): Readonly<Data>;
 
-    protected set state(state: Data);
+    protected set state(value: Data);
+
+    protected get serverState(): Readonly<Data>;
+
+    protected set serverState(value: Data);
 
     createHook(): UseNotifierHook<Data>;
+
+    createSetter (): UseSetterHook<this>;
 
     reset(): void;
 
@@ -33,7 +43,7 @@ export declare class Notifier<Data> {
 export declare class EventNotifier<State, EventType extends Record<string, any>> extends Notifier<State> {
     constructor(initialState: State);
 
-    protected on<Event extends keyof EventType>(event: Event, callback: (data: EventType[Event]) => void): Unsubscribe;
+    public on<Event extends keyof EventType>(event: Event, callback: (data: EventType[Event]) => void): Unsubscribe;
 
     protected emit<Event extends keyof EventType>(event: Event, data: EventType[Event]): void;
 }

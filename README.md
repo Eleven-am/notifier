@@ -18,14 +18,14 @@ For example, let's create a `PersonNotifier` class to manage a person's name and
 
 ```typescript
 class PersonNotifier extends Notifier<{ name: string; age: number }> {
-  setName(name: string) {
-    this.updateState({ name });
-    // this.state = { ...this.state, name };
-  }
+    setName(name: string) {
+        this.updateState({ name });
+        // this.state = { ...this.state, name };
+    }
 
-  setAge(age: number) {
-    this.updateState({ age });
-  }
+    setAge(age: number) {
+        this.updateState({ age });
+    }
 }
 ```
 
@@ -46,7 +46,8 @@ const personNotifier = new PersonNotifier({ name: 'John Doe', age: 25 });
 3. Create a hook to access and update the person's state:
 
 ```typescript
-const usePerson = personNotifier.createHook().useHook;
+const usePerson = personNotifier.createHook();
+const usePersonSetter = personNotifier.createSetter();
 ```
 
 4. Use the created hook within your functional components:
@@ -54,10 +55,12 @@ const usePerson = personNotifier.createHook().useHook;
 ```typescript
 const PersonComponent: React.FC = () => {
   // The transform function in the usePerson hook is optional
-  const { name, age, setName, setAge } = usePerson(state => ({
+  const { name, age } = usePerson(state => ({
     name: state.name.toUpperCase(),
     age: state.age,
   }));
+  
+  const { setName, setAge } = usePersonSetter();
 
   console.log(state);
 
@@ -157,31 +160,33 @@ class MyEventNotifier extends EventNotifier<MyState> {
 3. Create a hook to access and update the state:
 
 ```typescript
-const useMyEventNotifier = new MyEventNotifier(myInitialState).createHook().useHook;
+const myEventNotifier = new MyEventNotifier(initialState);
+const useMyEventNotifier = myEventNotifier.createHook()
+const useMyEventNotifierSetter = myEventNotifier.createSetter()
 ```
 
 4. Use the created hook within your functional components. Subscribe to the `dataUpdated` event and handle it using a callback function:
 
 ```typescript
 const MyComponent: React.FC = () => {
-  const { state, on } = useMyEventNotifier();
-  
-  const handleDataUpdated = (data: MyData) => {
-    // Handle the 'dataUpdated' event here
-    console.log('Data updated:', data);
-  };
+    const { on } = useMyEventNotifierSetter();
 
-  useEffect(() => {
-    const unsubscribe = on('dataUpdated', handleDataUpdated);
-
-    return () => {
-        unsubscribe(); // Unsubscribe from the event when the component unmounts
+    const handleDataUpdated = (data: MyData) => {
+        // Handle the 'dataUpdated' event here
+        console.log('Data updated:', data);
     };
-  }, [on]);
 
-  return (
-    // JSX code here
-  );
+    useEffect(() => {
+        const unsubscribe = on('dataUpdated', handleDataUpdated);
+
+        return () => {
+            unsubscribe(); // Unsubscribe from the event when the component unmounts
+        };
+    }, [on]);
+
+    return (
+        // JSX code here
+    );
 }
 ```
 
