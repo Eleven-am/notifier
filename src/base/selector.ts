@@ -111,7 +111,7 @@ export function selector<ReturnedState> (selector: SelectorHandler<ReturnedState
     return {
         getServerSnapshot: () => serverState,
         getSnapshot: () => returnedState,
-        subscribe: subject.subscribe,
+        subscribe: subject.subscribe.bind(subject),
         createHook,
     };
 }
