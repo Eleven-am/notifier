@@ -13,7 +13,7 @@ type SetFunction = <NotifierState>(notifier: BaseNotifier<NotifierState>, state:
 type SelectorHandler<ReturnedState> = (get: GetFunction, set: SetFunction) => Promise<ReturnedState> | ReturnedState;
 
 export function selector<ReturnedState> (selector: SelectorHandler<ReturnedState>) {
-    const notifiers = new Set<BaseNotifier<any> | SelectorHook<any>>();
+    const notifiers = new Set<BaseNotifier<unknown> | SelectorHook<unknown>>();
     const subject = new Subject<ReturnedState>();
 
     const get: GetFunction = (notifier) => {
