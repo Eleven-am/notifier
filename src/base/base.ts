@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useSyncExternalStore, useCallback } from 'react';
 
 import { Subject, Unsubscribe, Subscriber } from '../subjects/subject';
 import { deepCompare } from '../utils/deepCompare';
@@ -81,7 +81,7 @@ export class BaseNotifier<Data> {
     }
 
     createActors (): UseSetterHook<this> {
-        return () => this._getPublicMethods();
+        return useCallback(() => this._getPublicMethods(), []);
     }
 
     subscribe (subscriber: Subscriber<Data>): Unsubscribe {
