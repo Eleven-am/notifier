@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useCallback } from 'react';
+import { useSyncExternalStore } from 'react';
 
 import { Subject, Unsubscribe, Subscriber } from '../subjects/subject';
 import { deepCompare } from '../utils/deepCompare';
@@ -20,6 +20,8 @@ export class BaseNotifier<Data> {
 
     readonly #initialState: Data;
 
+    readonly #actors: PublicMethods<this>;
+
     #serverState: Data | null;
 
     #state: Data;
@@ -29,6 +31,7 @@ export class BaseNotifier<Data> {
         this.#state = initialState;
         this.#serverState = null;
         this.#subject = new Subject<Data>();
+        this.#actors = this._getPublicMethods();
     }
 
     protected get serverState (): Readonly<Data> {
@@ -81,7 +84,7 @@ export class BaseNotifier<Data> {
     }
 
     createActors (): UseSetterHook<this> {
-        return useCallback(() => this._getPublicMethods(), []);
+        return () => this.#actors;
     }
 
     subscribe (subscriber: Subscriber<Data>): Unsubscribe {
