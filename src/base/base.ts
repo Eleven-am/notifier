@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useSyncExternalStore, useState } from 'react';
 
 import { Subject, Unsubscribe, Subscriber } from '../subjects/subject';
 import { deepCompare } from '../utils/deepCompare';
@@ -9,11 +9,21 @@ type ClassMethods<T> = {
 
 type PublicMethods<T> = Omit<ClassMethods<T>, keyof BaseNotifier<any>>;
 
-type UseSetterHook<Notifier extends BaseNotifier<any>> = () => PublicMethods<Notifier>;
+type UseActorsHook<Class extends BaseNotifier<any>> = () => PublicMethods<Class>;
 
 type SelectorFunc<State, ReturnType> = (state: State) => ReturnType;
 
 export type UseNotifierHook<Data> =<ReturnType = Data>(selector?: SelectorFunc<Data, ReturnType>) => ReturnType;
+
+type InstanceOf<T> = T extends { prototype: infer R } ? R : never;
+type IgnoreConstructor<T> = Pick<T, keyof T>;
+type Subclass = IgnoreConstructor<typeof BaseNotifier>;
+type ConstructorParams<Class> = Class extends new (...args: infer Params) => any ? Params : never;
+type SubClassData<Sub extends Subclass> = InstanceOf<Sub> extends BaseNotifier<infer Data> ? Data : never;
+
+type UseFactoryHook<Sub extends Subclass> =
+    <ReturnType = SubClassData<Sub>>(selector?: SelectorFunc<SubClassData<Sub>, ReturnType>) =>
+    ReturnType & PublicMethods<InstanceOf<Sub>>;
 
 export class BaseNotifier<Data> {
     readonly #subject: Subject<Data>;
@@ -56,6 +66,25 @@ export class BaseNotifier<Data> {
         this.#subject.publish(state);
     }
 
+    static createFactoryHook <SubClass extends Subclass> (this: SubClass, ...params: ConstructorParams<SubClass>): UseFactoryHook<SubClass> {
+        return <ReturnType>(selector?: SelectorFunc<SubClassData<SubClass>, ReturnType>) => {
+            const [instance] = useState(() => this.build(...params));
+            const state = instance.createHook()(selector);
+            const actors = instance.createActors()();
+
+            return {
+                ...state,
+                ...actors,
+            };
+        };
+    }
+
+    static build <SubClass extends Subclass> (this: SubClass, ...params: ConstructorParams<SubClass>): InstanceOf<SubClass> {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
+        return new this(...params);
+    }
+
     reset (): void {
         this.#state = this.#initialState;
         this.#serverState = null;
@@ -83,7 +112,7 @@ export class BaseNotifier<Data> {
         };
     }
 
-    createActors (): UseSetterHook<this> {
+    createActors (): UseActorsHook<this> {
         return () => this.#actors;
     }
 

@@ -2,6 +2,10 @@ type GetFunction = <NotifierState>(notifier: Notifier<NotifierState> | Selector<
 
 type SetFunction = <NotifierState>(notifier: Notifier<NotifierState>, state: NotifierState) => void;
 
+type InstanceOf<T> = T extends { prototype: infer R } ? R : never;
+type IgnoreConstructor<T> = Pick<T, keyof T>;
+type Subclass = IgnoreConstructor<typeof Notifier>;
+
 type ClassMethods<T> = {
     [K in keyof T]: T[K] extends (...args: any[]) => any ? T[K] : never;
 };
@@ -16,9 +20,17 @@ type SelectorFunc<State, ReturnType> = (state: State) => ReturnType;
 
 type UseNotifierHook<State> = <ReturnType = State>(selector?: SelectorFunc<State, ReturnType>) => ReturnType;
 
+type ConstructorParams<Class> = Class extends new (...args: infer Params) => any ? Params : never;
+
 type Unsubscribe = () => void;
 
 type Observer<Data> = (data: Data) => void;
+
+type SubClassData<Sub extends Subclass> = InstanceOf<Sub> extends Notifier<infer Data> ? Data : never;
+
+type UseFactoryHook<Sub extends Subclass> =
+    <ReturnType = SubClassData<Sub>>(selector?: SelectorFunc<SubClassData<Sub>, ReturnType>) =>
+    ReturnType & PublicMethods<InstanceOf<Sub>>;
 
 export declare class Notifier<Data> {
     constructor(initialState: Data);
@@ -30,6 +42,8 @@ export declare class Notifier<Data> {
     protected get serverState(): Readonly<Data>;
 
     protected set serverState(value: Data);
+
+    static createFactoryHook<SubClass extends Subclass>(this: SubClass, ...params: ConstructorParams<SubClass>): UseFactoryHook<SubClass>;
 
     createHook(): UseNotifierHook<Data>;
 
