@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useState } from 'react';
+import { useSyncExternalStore, useState, useEffect } from 'react';
 
 import { Subject, Unsubscribe, Subscriber } from '../subjects/subject';
 import { deepCompare } from '../utils/deepCompare';
@@ -68,9 +68,13 @@ export class BaseNotifier<Data> {
 
     static createFactoryHook <SubClass extends Subclass> (this: SubClass, ...params: ConstructorParams<SubClass>): UseFactoryHook<SubClass> {
         return <ReturnType>(selector?: SelectorFunc<SubClassData<SubClass>, ReturnType>) => {
-            const [instance] = useState(() => this.build(...params));
+            const [instance, setInstance] = useState(() => this.build(...params));
             const state = instance.createHook()(selector);
             const actors = instance.createActors()();
+
+            useEffect(() => {
+                setInstance(this.build(...params));
+            }, [...params]);
 
             return {
                 ...state,
