@@ -7,7 +7,7 @@ The Notifier package is a robust and scalable solution for managing global state
 Install the Notifier package using npm:
 
 ```bash
-npm install notifier
+npm install @eleven-am/notifier
 ```
 
 ## Usage
@@ -17,6 +17,8 @@ The core is the `Notifier` class, which encapsulates state management. It expose
 For example, let's create a `PersonNotifier` class to manage a person's name and age:
 
 ```typescript
+import { Notifier } from '@eleven-am/notifier'; 
+
 class PersonNotifier extends Notifier<{ name: string; age: number }> {
     setName(name: string) {
         this.updateState({ name });
@@ -34,7 +36,7 @@ To use the `PersonNotifier` as a global state manager in your React application,
 1. Import the required dependencies:
 
 ```typescript
-import { Notifier } from 'notifier';
+import { PersonNotifier } from './notifier';
 ```
 
 2. Create an instance of `PersonNotifier` and initialize the state:
