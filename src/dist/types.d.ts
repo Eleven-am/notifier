@@ -26,6 +26,8 @@ type Unsubscribe = () => void;
 
 type Observer<Data> = (data: Data) => void;
 
+type UseEventHook<EventType> = <Event extends keyof EventType> (event: Event, callback: (data: EventType[Event]) => void) => void;
+
 type SubClassData<Sub extends Subclass> = InstanceOf<Sub> extends Notifier<infer Data> ? Data : never;
 
 type UseFactoryHook<Sub extends Subclass> =
@@ -59,6 +61,8 @@ export declare class EventNotifier<State, EventType extends Record<string, any>>
 
     public on<Event extends keyof EventType>(event: Event, callback: (data: EventType[Event]) => void): Unsubscribe;
 
+    public createUseEvent (): UseEventHook<EventType>
+
     protected emit<Event extends keyof EventType>(event: Event, data: EventType[Event]): void;
 }
 
@@ -67,3 +71,5 @@ declare class Selector<DataType> {
 }
 
 declare function selector<ReturnedState>(selector: SelectorHandler<ReturnedState>): Selector<ReturnedState>;
+
+export const getSnapshot: GetFunction;

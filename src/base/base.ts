@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 
 import { Subject, Unsubscribe, Subscriber } from '../subjects/subject';
 import { deepCompare } from '../utils/deepCompare';
@@ -24,6 +24,8 @@ type SubClassData<Sub extends Subclass> = InstanceOf<Sub> extends BaseNotifier<i
 type UseFactoryHook<Sub extends Subclass> =
     <ReturnType = SubClassData<Sub>>(selector?: SelectorFunc<SubClassData<Sub>, ReturnType>) =>
     ReturnType & PublicMethods<InstanceOf<Sub>>;
+
+const defaultSelector: SelectorFunc<any, any> = (state) => state;
 
 export class BaseNotifier<Data> {
     readonly #subject: Subject<Data>;
@@ -54,7 +56,7 @@ export class BaseNotifier<Data> {
         }
 
         this.#serverState = state;
-        this.state = state;
+        this.#state = state;
     }
 
     protected get state (): Readonly<Data> {
@@ -89,23 +91,18 @@ export class BaseNotifier<Data> {
         return new this(...params);
     }
 
-    reset (): void {
-        this.#state = this.#initialState;
-        this.#serverState = null;
-    }
-
     createHook (): UseNotifierHook<Data> {
-        return <ReturnType>(selector?: SelectorFunc<Data, ReturnType>) => {
-            const serverState = selector ? selector(this.serverState) : this.serverState as unknown as ReturnType;
-            let clientState = selector ? selector(this.state) : this.state as unknown as ReturnType;
+        return <ReturnType>(selector: SelectorFunc<Data, ReturnType> = defaultSelector) => {
+            const serverState = selector(this.serverState);
+            let clientState = selector(this.state);
 
-            const subscribe = (callback: (state: ReturnType) => void) => this.#subject.subscribe((state) => {
-                const newState = selector ? selector(state) : state as unknown as ReturnType;
+            const subscribe = (callback: () => void) => this.#subject.subscribe((state) => {
+                const newState = selector(state);
 
                 if (!deepCompare(clientState, newState)) {
                     clientState = newState;
 
-                    return callback(newState);
+                    return callback();
                 }
             });
 
@@ -114,6 +111,10 @@ export class BaseNotifier<Data> {
 
             return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
         };
+    }
+
+    reset (): void {
+        this.#state = this.#initialState;
     }
 
     createActors (): UseActorsHook<this> {

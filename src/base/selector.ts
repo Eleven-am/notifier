@@ -115,3 +115,11 @@ export function selector<ReturnedState> (selector: SelectorHandler<ReturnedState
         createHook,
     };
 }
+
+export const getSnapshot: GetFunction = (notifier) => {
+    if (notifier instanceof BaseNotifier) {
+        return notifier['state'];
+    }
+
+    return notifier.getSnapshot();
+};
