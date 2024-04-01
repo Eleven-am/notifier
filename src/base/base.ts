@@ -11,7 +11,7 @@ type PublicMethods<T> = Omit<ClassMethods<T>, keyof BaseNotifier<any>>;
 
 type UseActorsHook<Class extends BaseNotifier<any>> = () => PublicMethods<Class>;
 
-type SelectorFunc<State, ReturnType> = (state: State) => ReturnType;
+type SelectorFunc<State, ReturnType> = (state: State) => ReturnType | Promise<ReturnType>;
 
 export type UseNotifierHook<Data> =<ReturnType = Data>(selector?: SelectorFunc<Data, ReturnType>) => ReturnType;
 
@@ -43,7 +43,7 @@ export class BaseNotifier<Data> {
         this.#state = initialState;
         this.#serverState = null;
         this.#subject = new Subject<Data>();
-        this.#actors = this._getPublicMethods();
+        this.#actors = this.#getPublicMethods();
     }
 
     protected get serverState (): Readonly<Data> {
@@ -93,11 +93,38 @@ export class BaseNotifier<Data> {
 
     createHook (): UseNotifierHook<Data> {
         return <ReturnType>(selector: SelectorFunc<Data, ReturnType> = defaultSelector) => {
-            const serverState = selector(this.serverState);
-            let clientState = selector(this.state);
+            let subscriber = () => {};
+            let serverState: ReturnType;
+            let clientState: ReturnType;
 
-            const subscribe = (callback: () => void) => this.#subject.subscribe((state) => {
-                const newState = selector(state);
+            const initialiseState = () => {
+                const serverPromise = selector(this.serverState);
+                const clientPromise = selector(this.state);
+
+                if (serverPromise instanceof Promise) {
+                    serverPromise.then((state) => {
+                        serverState = state;
+                    });
+                } else {
+                    serverState = serverPromise;
+                }
+
+                if (clientPromise instanceof Promise) {
+                    clientPromise.then((state) => {
+                        clientState = state;
+                        subscriber();
+                    });
+                } else {
+                    clientState = clientPromise;
+                    subscriber();
+                }
+            };
+
+            initialiseState();
+
+            const subscribe = (callback: () => void) => this.#subject.subscribe(async (state) => {
+                subscriber = callback;
+                const newState = await selector(state);
 
                 if (!deepCompare(clientState, newState)) {
                     clientState = newState;
@@ -132,7 +159,7 @@ export class BaseNotifier<Data> {
         };
     }
 
-    private _getPublicMethods (): PublicMethods<this> {
+    #getPublicMethods (): PublicMethods<this> {
         const isAccessor = (prop: string) => {
             const obj = Object.getPrototypeOf(this);
             const descriptor = Object.getOwnPropertyDescriptor(obj, prop);

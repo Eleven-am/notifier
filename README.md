@@ -163,8 +163,9 @@ class MyEventNotifier extends EventNotifier<MyState> {
 
 ```typescript
 const myEventNotifier = new MyEventNotifier(initialState);
-const useMyEventNotifier = myEventNotifier.createHook()
-const useMyEventNotifierSetter = myEventNotifier.createActors()
+const useMyEventNotifier = myEventNotifier.createHook();
+const useMyEventNotifierSetter = myEventNotifier.createActors();
+const useMyEventNotifierEvents = myEventNotifier.createUseEvent();
 ```
 
 4. Use the created hook within your functional components. Subscribe to the `dataUpdated` event and handle it using a callback function:
@@ -185,6 +186,8 @@ const MyComponent: React.FC = () => {
             unsubscribe(); // Unsubscribe from the event when the component unmounts
         };
     }, [on]);
+
+    // useMyEventNotifierEvents('dataUpdated', handleDataUpdated);
 
     return (
         // JSX code here

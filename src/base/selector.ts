@@ -38,14 +38,12 @@ export function selector<ReturnedState> (selector: SelectorHandler<ReturnedState
         return notifier.getServerSnapshot();
     };
 
-    const set: SetFunction = (notifier, state) => {
-        notifier['state'] = state;
-    };
+    const set: SetFunction = (notifier, state) => notifier['state'] = state;
 
     let returnedState: ReturnedState;
     let serverState: ReturnedState;
 
-    const initialiseValues = () => {
+    function initialiseValues () {
         const serverPromise = selector(getServer, set);
         const clientPromise = selector(get, set);
 
@@ -66,7 +64,7 @@ export function selector<ReturnedState> (selector: SelectorHandler<ReturnedState
             returnedState = clientPromise;
             subject.publish(clientPromise);
         }
-    };
+    }
 
     initialiseValues();
 
@@ -109,9 +107,9 @@ export function selector<ReturnedState> (selector: SelectorHandler<ReturnedState
     }
 
     return {
+        subscribe: subject.subscribe.bind(subject),
         getServerSnapshot: () => serverState,
         getSnapshot: () => returnedState,
-        subscribe: subject.subscribe.bind(subject),
         createHook,
     };
 }
