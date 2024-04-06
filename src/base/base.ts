@@ -160,35 +160,34 @@ export class BaseNotifier<Data> {
     }
 
     #getPublicMethods (): PublicMethods<this> {
-        const isAccessor = (prop: string) => {
-            const obj = Object.getPrototypeOf(this);
+        const isAccessor = (prop: string, obj: any): boolean => {
             const descriptor = Object.getOwnPropertyDescriptor(obj, prop);
 
             return Boolean(descriptor && (descriptor.get || descriptor.set));
         };
 
         function getAllMethodNames (obj: any): string[] {
+            const objectPrototype = Object.getPrototypeOf({});
+            const objectKeys = Reflect.ownKeys(objectPrototype);
             const methods = new Set<string>();
 
             // eslint-disable-next-line no-cond-assign
             while (obj = Reflect.getPrototypeOf(obj)) {
                 const keys = Reflect.ownKeys(obj);
 
-                keys.forEach((k) => methods.add(k.toString()));
+                keys
+                    .map((k) => k.toString())
+                    .filter((name) => !objectKeys.includes(name))
+                    // eslint-disable-next-line no-loop-func
+                    .filter((name) => !isAccessor(name, obj))
+                    .forEach((k) => methods.add(k));
             }
 
-            const objectPrototype = Object.getPrototypeOf({});
-            const keys = Reflect.ownKeys(objectPrototype);
-            const methodsKeys = Array.from(methods);
-
-            return methodsKeys.filter((k) => !keys.includes(k))
+            return Array.from(methods)
                 .filter((k) => !k.startsWith('#') && !k.startsWith('_') && k !== 'constructor');
         }
 
-        console.log(getAllMethodNames(this));
-
         return getAllMethodNames(this)
-            .filter((name) => !isAccessor(name))
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             .filter((name) => typeof this[name] === 'function')
