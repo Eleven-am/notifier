@@ -167,32 +167,26 @@ export class BaseNotifier<Data> {
             return Boolean(descriptor && (descriptor.get || descriptor.set));
         };
 
-        const getAllMethods = (obj: any) => {
-            let props: string[] = [];
+        function getAllMethodNames (obj: any): string[] {
+            const methods = new Set<string>();
 
-            do {
-                const l = Object.getOwnPropertyNames(obj)
-                    .concat(Object.getOwnPropertySymbols(obj).map((s) => s.toString()))
-                    .sort()
-                    .filter((p) => !p.startsWith('#') || !p.startsWith('_'))
-                    // eslint-disable-next-line no-loop-func
-                    .filter((p, i, arr) => typeof obj[p] === 'function' && p !== 'constructor' && (i === 0 || p !== arr[i - 1]) && props.indexOf(p) === -1);
+            // eslint-disable-next-line no-cond-assign
+            while (obj = Reflect.getPrototypeOf(obj)) {
+                const keys = Reflect.ownKeys(obj);
 
-                props = props.concat(l);
+                keys.forEach((k) => methods.add(k.toString()));
             }
-            while (
-                (obj = Object.getPrototypeOf(obj)) &&
-                Object.getPrototypeOf(obj)
-            );
 
-            return props;
-        };
+            const objectPrototype = Object.getPrototypeOf({});
+            const keys = Reflect.ownKeys(objectPrototype);
+            const methodsKeys = Array.from(methods);
+
+            return methodsKeys.filter((k) => !keys.includes(k))
+                .filter((k) => !k.startsWith('#') && !k.startsWith('_') && k !== 'constructor');
+        }
 
 
-        return getAllMethods(this)
-            .filter((name) => !name.startsWith('_'))
-            .filter((name) => !name.startsWith('#'))
-            .filter((name) => name !== 'constructor')
+        return getAllMethodNames(this)
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             .filter((name) => typeof this[name] === 'function')
