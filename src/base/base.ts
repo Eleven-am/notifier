@@ -188,10 +188,10 @@ export class BaseNotifier<Data> {
         console.log(getAllMethodNames(this));
 
         return getAllMethodNames(this)
+            .filter((name) => !isAccessor(name))
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             .filter((name) => typeof this[name] === 'function')
-            .filter((name) => !isAccessor(name))
             .reduce((methods, name) => {
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
