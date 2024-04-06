@@ -4,9 +4,9 @@
   "description": "",
   "scripts": {
     "test": "jest --coverage --verbose --watchAll",
-    "publishToNpm": "cd dist && npm version patch && npm publish",
+    "publishToNpm": "cd dist && npm publish",
     "build": "rimraf dist && tsc",
-    "copy": "cp package.json dist && cp README.md dist && cp LICENSE dist && cp src/dist/* dist",
+    "copy": "npm version patch && cp package.json dist && cp README.md dist && cp LICENSE dist && cp src/dist/* dist",
     "pipeline": "npm run build && npm run copy && npm run publishToNpm"
   },
   "publishConfig": {

@@ -167,7 +167,20 @@ export class BaseNotifier<Data> {
             return Boolean(descriptor && (descriptor.get || descriptor.set));
         };
 
-        return Object.getOwnPropertyNames(Object.getPrototypeOf(this))
+        function getAllMethodNames (obj: any) {
+            const methods = new Set<string>();
+
+            while (obj = Reflect.getPrototypeOf(obj)) {
+                const keys = Reflect.ownKeys(obj);
+
+                keys.forEach((k) => methods.add(k.toString()));
+            }
+
+            return [...methods];
+        }
+
+
+        return getAllMethodNames(this)
             .filter((name) => !name.startsWith('_'))
             .filter((name) => name !== 'constructor')
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
