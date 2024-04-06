@@ -170,6 +170,7 @@ export class BaseNotifier<Data> {
         function getAllMethodNames (obj: any) {
             const methods = new Set<string>();
 
+            // eslint-disable-next-line no-cond-assign
             while (obj = Reflect.getPrototypeOf(obj)) {
                 const keys = Reflect.ownKeys(obj);
 
