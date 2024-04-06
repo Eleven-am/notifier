@@ -167,21 +167,28 @@ export class BaseNotifier<Data> {
             return Boolean(descriptor && (descriptor.get || descriptor.set));
         };
 
-        function getAllMethodNames (obj: any) {
-            const methods = new Set<string>();
+        const getAllMethods = (obj: any) => {
+            let props: string[] = [];
 
-            // eslint-disable-next-line no-cond-assign
-            while (obj = Reflect.getPrototypeOf(obj)) {
-                const keys = Reflect.ownKeys(obj);
+            do {
+                const l = Object.getOwnPropertyNames(obj)
+                    .concat(Object.getOwnPropertySymbols(obj).map((s) => s.toString()))
+                    .sort()
+                    // eslint-disable-next-line no-loop-func
+                    .filter((p, i, arr) => typeof obj[p] === 'function' && p !== 'constructor' && (i === 0 || p !== arr[i - 1]) && props.indexOf(p) === -1);
 
-                keys.forEach((k) => methods.add(k.toString()));
+                props = props.concat(l);
             }
+            while (
+                (obj = Object.getPrototypeOf(obj)) &&
+                Object.getPrototypeOf(obj)
+            );
 
-            return [...methods];
-        }
+            return props;
+        };
 
 
-        return getAllMethodNames(this)
+        return getAllMethods(this)
             .filter((name) => !name.startsWith('_'))
             .filter((name) => name !== 'constructor')
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
