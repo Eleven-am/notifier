@@ -1,6 +1,6 @@
 {
   "name": "@eleven-am/notifier",
-  "version": "0.0.62",
+  "version": "0.0.63",
   "description": "",
   "scripts": {
     "test": "jest --coverage --verbose --watchAll",
