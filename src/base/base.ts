@@ -185,6 +185,7 @@ export class BaseNotifier<Data> {
                 .filter((k) => !k.startsWith('#') && !k.startsWith('_') && k !== 'constructor');
         }
 
+        console.log(getAllMethodNames(this));
 
         return getAllMethodNames(this)
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
