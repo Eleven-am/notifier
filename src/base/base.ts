@@ -174,6 +174,7 @@ export class BaseNotifier<Data> {
                 const l = Object.getOwnPropertyNames(obj)
                     .concat(Object.getOwnPropertySymbols(obj).map((s) => s.toString()))
                     .sort()
+                    .filter((p) => !p.startsWith('#') || !p.startsWith('_'))
                     // eslint-disable-next-line no-loop-func
                     .filter((p, i, arr) => typeof obj[p] === 'function' && p !== 'constructor' && (i === 0 || p !== arr[i - 1]) && props.indexOf(p) === -1);
 
