@@ -17,7 +17,7 @@ export class EventNotifier<State, EventType extends Record<string, any>> extends
         return this.#subject.subscribe(event, callback);
     }
 
-    public createUseEvent (): UseEventHook<EventType> {
+    public createEvents (): UseEventHook<EventType> {
         return (event, callback) => {
             useEffect(() => {
                 const unsubscribe = this.#subject.subscribe(event, callback);
@@ -25,7 +25,7 @@ export class EventNotifier<State, EventType extends Record<string, any>> extends
                 return () => {
                     unsubscribe();
                 };
-            }, []);
+            }, [event, callback]);
         };
     }
 

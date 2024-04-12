@@ -61,7 +61,7 @@ export declare class EventNotifier<State, EventType extends Record<string, any>>
 
     public on<Event extends keyof EventType>(event: Event, callback: (data: EventType[Event]) => void): Unsubscribe;
 
-    public createUseEvent (): UseEventHook<EventType>
+    public createEvents (): UseEventHook<EventType>
 
     protected emit<Event extends keyof EventType>(event: Event, data: EventType[Event]): void;
 }
