@@ -11,7 +11,7 @@ type PublicMethods<T> = Omit<ClassMethods<T>, keyof BaseNotifier<any>>;
 
 type UseActorsHook<Class extends BaseNotifier<any>> = () => PublicMethods<Class>;
 
-type SelectorFunc<State, ReturnType> = (state: State) => ReturnType | Promise<ReturnType>;
+type SelectorFunc<State, ReturnType> = (state: State) => ReturnType;
 
 export type UseNotifierHook<Data> =<ReturnType = Data>(selector?: SelectorFunc<Data, ReturnType>) => ReturnType;
 
@@ -93,38 +93,11 @@ export class BaseNotifier<Data> {
 
     createHook (): UseNotifierHook<Data> {
         return <ReturnType>(selector: SelectorFunc<Data, ReturnType> = defaultSelector) => {
-            let subscriber = () => {};
-            let serverState: ReturnType;
-            let clientState: ReturnType;
+            const serverState = selector(this.serverState);
+            let clientState = selector(this.state);
 
-            const initialiseState = () => {
-                const serverPromise = selector(this.serverState);
-                const clientPromise = selector(this.state);
-
-                if (serverPromise instanceof Promise) {
-                    serverPromise.then((state) => {
-                        serverState = state;
-                    });
-                } else {
-                    serverState = serverPromise;
-                }
-
-                if (clientPromise instanceof Promise) {
-                    clientPromise.then((state) => {
-                        clientState = state;
-                        subscriber();
-                    });
-                } else {
-                    clientState = clientPromise;
-                    subscriber();
-                }
-            };
-
-            initialiseState();
-
-            const subscribe = (callback: () => void) => this.#subject.subscribe(async (state) => {
-                subscriber = callback;
-                const newState = await selector(state);
+            const subscribe = (callback: () => void) => this.#subject.subscribe((state) => {
+                const newState = selector(state);
 
                 if (!deepCompare(clientState, newState)) {
                     clientState = newState;
