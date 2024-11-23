@@ -1,207 +1,413 @@
 # Notifier
 
-The Notifier package is a robust and scalable solution for managing global state in React applications. It provides a centralized store for shared state, promoting code organization, reusability, and simplifying state synchronization across components. With its easy-to-use hooks and powerful features, the Notifier package enhances code maintainability and scalability.
+A powerful and type-safe state management solution for React applications, featuring class-based state management, selectors, and event handling.
+
+[![npm version](https://badge.fury.io/js/%40eleven-am%2Fnotifier.svg)](https://www.npmjs.com/package/@eleven-am/notifier)
+![License](https://img.shields.io/github/license/eleven-am/notifier)
+
+## Features
+
+- 🎯 **Type-safe**: Full TypeScript support with precise type inference
+- 🏗️ **Class-based Architecture**: Clean and organized state management
+- 🔄 **Selectors**: Compute derived state with memoization
+- 📡 **Event System**: Built-in pub/sub pattern for component communication
+- 🎣 **Custom Hooks**: Generate specialized hooks for state, actions, and events
+- 🏭 **Factory Pattern**: Create local state instances from global notifiers
+- 🔒 **Encapsulation**: Protected state access with controlled updates
 
 ## Installation
-
-Install the Notifier package using npm:
 
 ```bash
 npm install @eleven-am/notifier
 ```
 
-## Usage
+## Basic Usage
 
-The core is the `Notifier` class, which encapsulates state management. It exposes a protected `state` variable to hold the current state of the Notifier instance. This ensures that the state remains encapsulated and not directly accessible from outside the class.
-
-For example, let's create a `PersonNotifier` class to manage a person's name and age:
+### 1. Create a Notifier
 
 ```typescript
-import { Notifier } from '@eleven-am/notifier'; 
+import { Notifier } from '@eleven-am/notifier';
 
-class PersonNotifier extends Notifier<{ name: string; age: number }> {
-    setName(name: string) {
-        this.updateState({ name });
-        // this.state = { ...this.state, name };
-    }
-
-    setAge(age: number) {
-        this.updateState({ age });
-    }
+interface UserState {
+  name: string;
+  age: number;
 }
-```
 
-To use the `PersonNotifier` as a global state manager in your React application, follow these steps:
+class UserNotifier extends Notifier<UserState> {
+  setName(name: string) {
+    this.updateState({ name });
+  }
 
-1. Import the required dependencies:
+  setAge(age: number) {
+    this.updateState({ age });
+  }
+}
 
-```typescript
-import { PersonNotifier } from './notifier';
-```
-
-2. Create an instance of `PersonNotifier` and initialize the state:
-
-```typescript
-const personNotifier = new PersonNotifier({ name: 'John Doe', age: 25 });
-```
-
-3. Create a hook to access and update the person's state:
-
-```typescript
-const usePerson = personNotifier.createHook();
-const usePersonSetter = personNotifier.createActors();
-```
-
-4. Use the created hook within your functional components:
-
-```typescript
-const PersonComponent: React.FC = () => {
-  // The transform function in the usePerson hook is optional
-  const { name, age } = usePerson(state => ({
-    name: state.name.toUpperCase(),
-    age: state.age,
-  }));
-  
-  const { setName, setAge } = usePersonSetter();
-
-  console.log(state);
-
-  return (
-    <div>
-      <p>Name: {name}</p>
-      <p>Age: {age}</p>
-      <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
-      <input type="number" value={age} onChange={(e) => setAge(Number(e.target.value))} />
-    </div>
-  );
-};
-```
-
-By following these steps, you can effectively manage the state of a person's name and age throughout your React application.
-
-## Selectors
-
-The Notifier package provides a powerful feature called selectors, which allow you to derive state from one or more Notifiers. A selector takes a `SelectorHandler` function as an argument, providing `get` and `set` functions for retrieving and updating Notifiers' state. Selectors support asynchronous operations as well, making it convenient to perform asynchronous tasks within the function.
-
-To demonstrate the usage of selectors, let's calculate the sum of two counters managed by different Notifiers:
-
-```typescript
-const sumSelector = selector((get, set) => {
-  const counter1 = get(counterNotifier1);
-  const counter2 = get(counterNotifier2);
-
-  return counter1 + counter2;
+// Initialize with default state
+const userNotifier = new UserNotifier({
+  name: 'John Doe',
+  age: 25
 });
 ```
 
-To access the derived state, create a hook using the `createHook` method of the selector:
+### 2. Create and Use Hooks
 
 ```typescript
-const useSum = sumSelector.createHook();
-```
+// Create hooks for global state management
+const useUser = userNotifier.createStateHook();
+const useUserActions = userNotifier.createActionsHook();
 
-The `useSum` hook can then be used within your functional components:
-
-```typescript
-const SumComponent: React.FC = () => {
-  // The transform function in the useSum hook is optional
-  const sum = useSum(state => `${state}`);
-
-  console.log(sum);
+// Use in components
+function UserProfile() {
+  // Optional transform function
+  const { name, age } = useUser(state => ({
+    name: state.name.toUpperCase(),
+    age: state.age
+  }));
+  
+  const { setName, setAge } = useUserActions();
 
   return (
     <div>
-      <p>Sum: {sum}</p>
+      <input 
+        value={name}
+        onChange={e => setName(e.target.value)}
+      />
+      <input 
+        type="number"
+        value={age}
+        onChange={e => setAge(Number(e.target.value))}
+      />
     </div>
   );
-};
-```
-
-By utilizing selectors, you can efficiently compute and derive state from multiple
-
-Notifiers, enabling clean and reusable state transformations. Selectors are memoized, executing the `SelectorHandler` function only when the dependent Notifiers are updated.
-
-### EventNotifier
-
-The `EventNotifier` class extends the `Notifier` class in the Notifier package, providing additional functionality for event-based communication. It facilitates inter-component communication by allowing components to subscribe to events and trigger callbacks when those events are emitted.
-
-To use the `EventNotifier` class, follow these steps:
-
-1. Create a subclass of `EventNotifier` and define your custom state:
-
-```typescript
-class MyEventNotifier extends EventNotifier<MyState, MyEvent> {
-  // Define your custom state and methods here
-}
-
-interface MyState {
-  // Define your state properties here
-}
-
-interface MyEvent {
-  // Define your event types here
-  // For example, 'dataUpdated' event that emits the updated data
-  dataUpdated: MyData;
 }
 ```
 
-2. Implement your custom logic and methods within the subclass. For example, let's define an event called `dataUpdated` that is emitted when the data is updated:
+## Advanced Features
+
+### Factory Pattern
+
+The factory pattern allows you to create local instances of a notifier, enabling component-specific state management instead of global state. This is particularly useful when you need multiple independent instances of the same state structure:
 
 ```typescript
-class MyEventNotifier extends EventNotifier<MyState> {
-  updateData(data: MyData) {
-    // Perform the data update logic here
-    this.updateState({ data });
+// Create a factory hook with initial state
+const userFactory = UserNotifier.createFactoryHook({
+  name: 'John Doe',
+  age: 25
+});
 
-    // Emit the 'dataUpdated' event with the updated data
-    this.emit('dataUpdated', data);
+// Use in components for local state management
+function UserCard() {
+  // Each component gets its own instance of the state
+  const { name, age } = userFactory();
+  
+  return (
+    <div>
+      <h2>{name}</h2>
+      <p>Age: {age}</p>
+    </div>
+  );
+}
+
+// Multiple instances with independent state
+function UserList() {
+  return (
+    <div>
+      <UserCard /> {/* Has its own state */}
+      <UserCard /> {/* Has different independent state */}
+      <UserCard /> {/* Has different independent state */}
+    </div>
+  );
+}
+```
+
+The key differences between global and local state management:
+
+```typescript
+// Global State (shared across all components)
+const globalUserNotifier = new UserNotifier({ name: 'John', age: 25 });
+const useGlobalUser = globalUserNotifier.createStateHook();
+
+// Local State (independent for each component)
+const useLocalUser = UserNotifier.createFactoryHook({ name: 'John', age: 25 });
+
+function App() {
+  // These components share the same state
+  return (
+    <>
+      <GlobalUserComponent />
+      <GlobalUserComponent /> {/* Updates reflect in both components */}
+    </>
+  );
+}
+
+function LocalStateApp() {
+  // These components have independent states
+  return (
+    <>
+      <LocalUserComponent /> {/* Independent state */}
+      <LocalUserComponent /> {/* Different independent state */}
+    </>
+  );
+}
+```
+
+### Selectors
+
+Create computed state derived from one or more notifiers:
+
+```typescript
+import { selector } from '@eleven-am/notifier';
+
+const userDetailsSelector = selector((get, set) => {
+  const user = get(userNotifier);
+  const preferences = get(preferencesNotifier);
+  
+  return {
+    fullName: `${user.name} (${preferences.nickname})`,
+    isAdult: user.age >= 18
+  };
+});
+
+// Create hook for the selector
+const useUserDetails = userDetailsSelector.createStateHook();
+```
+
+### Event Notifier
+
+Handle pub/sub events between components:
+
+```typescript
+import { EventNotifier } from '@eleven-am/notifier';
+
+interface ChatState {
+  messages: string[];
+}
+
+interface ChatEvents {
+  messageReceived: string;
+  typing: { userId: string };
+}
+
+class ChatNotifier extends EventNotifier<ChatState, ChatEvents> {
+  addMessage(message: string) {
+    this.updateState({
+      messages: [...this.state.messages, message]
+    });
+    this.emit('messageReceived', message);
+  }
+
+  setTyping(userId: string) {
+    this.emit('typing', { userId });
+  }
+}
+
+// In components
+function ChatRoom() {
+  const { on } = useChatActions();
+  
+  // Method 1: Using the events hook
+  useChatEvents('messageReceived', (message) => {
+    console.log('New message:', message);
+  });
+  
+  // Method 2: Using direct subscription
+  useEffect(() => {
+    const unsubscribe = on('typing', ({ userId }) => {
+      console.log(`${userId} is typing...`);
+    });
+    
+    return unsubscribe;
+  }, [on]);
+}
+```
+
+## Type Definitions
+
+Key types for advanced usage:
+
+```typescript
+// Selector function type
+type SelectorFunc<State, ReturnType> = (state: State) => ReturnType;
+
+// Hook for accessing notifier state
+type UseNotifierHook<State> = <ReturnType = State>(
+  selector?: SelectorFunc<State, ReturnType>
+) => ReturnType;
+
+// Hook for accessing notifier methods
+type UseActorsHook<Class extends Notifier<any>> = () => 
+  PublicMethods<Class>;
+
+// Event subscription callback
+type Observer<Data> = (data: Data) => void;
+
+// Event hook type
+type UseEventHook<EventType> = <Event extends keyof EventType>(
+  event: Event, 
+  callback: (data: EventType[Event]) => void
+) => void;
+```
+
+## Why Class-Based State Management?
+
+The Notifier package leverages classes for state management, providing several key advantages over traditional object-based approaches:
+
+### 1. Inheritance and Extension
+```typescript
+// Base authentication notifier with common functionality
+class AuthNotifier extends Notifier<AuthState> {
+  login(credentials: Credentials) {
+    // Common login logic
+  }
+  
+  logout() {
+    // Common logout logic
+  }
+}
+
+// Specialized authentication for different providers
+class OAuth2Notifier extends AuthNotifier {
+  login(credentials: OAuth2Credentials) {
+    // OAuth2 specific logic
+    super.login(credentials);
+    this.handleTokenRefresh();
+  }
+  
+  private handleTokenRefresh() {
+    // Token refresh logic
+  }
+}
+
+class BasicAuthNotifier extends AuthNotifier {
+  login(credentials: BasicAuthCredentials) {
+    // Basic auth specific logic
+    super.login(credentials);
   }
 }
 ```
 
-3. Create a hook to access and update the state:
-
+### 2. Encapsulation and Privacy
 ```typescript
-const myEventNotifier = new MyEventNotifier(initialState);
-const useMyEventNotifier = myEventNotifier.createHook();
-const useMyEventNotifierSetter = myEventNotifier.createActors();
-const useMyEventNotifierEvents = myEventNotifier.createUseEvent();
-```
+class UserNotifier extends Notifier<UserState> {
+  private validateAge(age: number) {
+    if (age < 0 || age > 150) {
+      throw new Error('Invalid age');
+    }
+  }
 
-4. Use the created hook within your functional components. Subscribe to the `dataUpdated` event and handle it using a callback function:
-
-```typescript
-const MyComponent: React.FC = () => {
-    const { on } = useMyEventNotifierSetter();
-
-    const handleDataUpdated = (data: MyData) => {
-        // Handle the 'dataUpdated' event here
-        console.log('Data updated:', data);
-    };
-
-    useEffect(() => {
-        const unsubscribe = on('dataUpdated', handleDataUpdated);
-
-        return () => {
-            unsubscribe(); // Unsubscribe from the event when the component unmounts
-        };
-    }, [on]);
-
-    // useMyEventNotifierEvents('dataUpdated', handleDataUpdated);
-
-    return (
-        // JSX code here
-    );
+  setAge(age: number) {
+    this.validateAge(age);
+    this.updateState({ age });
+  }
+  
+  // State can only be modified through defined methods
+  // No direct external state manipulation possible
 }
 ```
 
-The `EventNotifier` class enables efficient event-based communication between components, allowing for decoupled and reactive architectures in your React application.
+### 3. Method Organization and Code Structure
+```typescript
+class ShoppingCartNotifier extends Notifier<CartState> {
+  // Clear grouping of related functionality
+  // Cart Items Management
+  addItem(item: Product) { /* ... */ }
+  removeItem(itemId: string) { /* ... */ }
+  updateQuantity(itemId: string, quantity: number) { /* ... */ }
+  
+  // Cart Totals
+  calculateSubtotal() { /* ... */ }
+  calculateTax() { /* ... */ }
+  calculateTotal() { /* ... */ }
+  
+  // Checkout Process
+  beginCheckout() { /* ... */ }
+  applyDiscount(code: string) { /* ... */ }
+  completeTransaction() { /* ... */ }
+}
+```
 
-## Conclusion
-In summary, the Notifier package offers a powerful solution for managing global state in React applications. By leveraging classes instead of objects, it brings significant advantages to state management. Classes provide improved encapsulation, access control, and instance-specific data, leading to better code organization and maintainability.
+### 4. Type Safety and Intellisense
+```typescript
+class ProductNotifier extends Notifier<ProductState> {
+  // Methods and properties are properly typed
+  // IDE provides excellent autocomplete and type checking
+  updateStock(productId: string, quantity: number) {
+    const product = this.state.products[productId];
+    if (!product) throw new Error('Product not found');
+    
+    this.updateState({
+      products: {
+        ...this.state.products,
+        [productId]: {
+          ...product,
+          stock: quantity
+        }
+      }
+    });
+  }
+}
+```
 
-Additionally, using classes promotes code reusability, allowing developers to extend and customize the Notifier package's functionality. This enables efficient code sharing and reduces redundancy, resulting in cleaner codebases.
+### 5. Testing and Mocking
+```typescript
+class ApiNotifier extends Notifier<ApiState> {
+  protected api: ApiService;
+  
+  constructor(initialState: ApiState, api: ApiService) {
+    super(initialState);
+    this.api = api;
+  }
+  
+  async fetchData() {
+    const data = await this.api.getData();
+    this.updateState({ data });
+  }
+}
 
-The support for inheritance and polymorphism offered by classes empowers developers to build upon existing functionality and create specialized state management solutions. This flexibility ensures that the Notifier package can handle complex state management scenarios and adapt to evolving requirements.
+// Easy to test with mock services
+describe('ApiNotifier', () => {
+  it('should fetch and update data', async () => {
+    const mockApi = new MockApiService();
+    const notifier = new ApiNotifier(initialState, mockApi);
+    await notifier.fetchData();
+    expect(notifier.state.data).toEqual(expectedData);
+  });
+});
+```
 
-By choosing the Notifier package and its class-based approach, React developers can simplify state synchronization, establish a single source of truth, and enhance reusability and maintainability in their projects.
+### 6. Cross-Cutting Concerns
+```typescript
+class LoggingNotifier<T> extends Notifier<T> {
+  protected updateState(state: Partial<T>) {
+    console.log('State update:', state);
+    super.updateState(state);
+    console.log('New state:', this.state);
+  }
+}
+
+// Easily add logging to any notifier
+class UserNotifier extends LoggingNotifier<UserState> {
+  // All state updates are automatically logged
+  updateProfile(profile: Partial<UserState>) {
+    this.updateState(profile);
+  }
+}
+```
+
+## Best Practices
+
+1. **Global vs Local State**: Use regular notifier instances for global state and factory hooks for component-specific state
+2. **State Updates**: Use `updateState` method for partial updates instead of directly setting state
+3. **Event Cleanup**: Always unsubscribe from events in useEffect cleanup function
+4. **Selector Memoization**: Use selectors for computed values that depend on multiple state sources
+5. **Type Safety**: Leverage TypeScript interfaces for state and event types
+6. **Encapsulation**: Keep state modifications within the notifier class methods
+
+## Contributing
+
+We welcome contributions! Please see our [contributing guidelines](CONTRIBUTING.md) for details.
+
+## License
+
+MIT © [Roy OSSAI](https://github.com/eleven-am)

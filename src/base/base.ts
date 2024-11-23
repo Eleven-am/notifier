@@ -1,4 +1,4 @@
-import { useState, useEffect, useSyncExternalStore } from 'react';
+import { useState, useEffect, useSyncExternalStore, useRef, useCallback } from 'react';
 
 import { Subject, Unsubscribe, Subscriber } from '../subjects/subject';
 import { deepCompare } from '../utils/deepCompare';
@@ -71,8 +71,8 @@ export class BaseNotifier<Data> {
     static createFactoryHook <SubClass extends Subclass> (this: SubClass, ...params: ConstructorParams<SubClass>): UseFactoryHook<SubClass> {
         return <ReturnType>(selector?: SelectorFunc<SubClassData<SubClass>, ReturnType>) => {
             const [instance, setInstance] = useState(() => this.build(...params));
-            const state = instance.createHook()(selector);
-            const actors = instance.createActors()();
+            const state = instance.createStateHook()(selector);
+            const actors = instance.createActionsHook()();
 
             useEffect(() => {
                 setInstance(this.build(...params));
@@ -91,23 +91,29 @@ export class BaseNotifier<Data> {
         return new this(...params);
     }
 
-    createHook (): UseNotifierHook<Data> {
+    createStateHook (): UseNotifierHook<Data> {
         return <ReturnType>(selector: SelectorFunc<Data, ReturnType> = defaultSelector) => {
-            const serverState = selector(this.serverState);
-            let clientState = selector(this.state);
+            const selectorRef = useRef(selector);
+            const clientStateRef = useRef(selectorRef.current(this.state));
+            const getSnapshot = useCallback(() => clientStateRef.current, []);
+            const serverStateRef = useRef(selectorRef.current(this.serverState));
+            const getServerSnapshot = useCallback(() => serverStateRef.current, []);
 
-            const subscribe = (callback: () => void) => this.#subject.subscribe((state) => {
-                const newState = selector(state);
+            const subscribe = useCallback((callback: () => void) => {
+                return this.#subject.subscribe((state) => {
+                    const newState = selectorRef.current(state);
 
-                if (!deepCompare(clientState, newState)) {
-                    clientState = newState;
+                    if (!deepCompare(clientStateRef.current, newState)) {
+                        clientStateRef.current = newState;
+                        // eslint-disable-next-line callback-return
+                        callback();
+                    }
+                });
+            }, []);
 
-                    return callback();
-                }
-            });
-
-            const getSnapshot = () => clientState;
-            const getServerSnapshot = () => serverState;
+            useEffect(() => {
+                selectorRef.current = selector;
+            }, [selector]);
 
             return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
         };
@@ -117,7 +123,7 @@ export class BaseNotifier<Data> {
         this.#state = this.#initialState;
     }
 
-    createActors (): UseActorsHook<this> {
+    createActionsHook (): UseActorsHook<this> {
         return () => this.#actors;
     }
 
@@ -173,3 +179,5 @@ export class BaseNotifier<Data> {
             }, {} as PublicMethods<this>);
     }
 }
+
+const factory = BaseNotifier.createFactoryHook();

@@ -47,9 +47,9 @@ export declare class Notifier<Data> {
 
     static createFactoryHook<SubClass extends Subclass>(this: SubClass, ...params: ConstructorParams<SubClass>): UseFactoryHook<SubClass>;
 
-    createHook(): UseNotifierHook<Data>;
+    createStateHook(): UseNotifierHook<Data>;
 
-    createActors (): UseActorsHook<this>;
+    createActionsHook (): UseActorsHook<this>;
 
     reset(): void;
 
@@ -61,13 +61,13 @@ export declare class EventNotifier<State, EventType extends Record<string, any>>
 
     public on<Event extends keyof EventType>(event: Event, callback: (data: EventType[Event]) => void): Unsubscribe;
 
-    public createEvents (): UseEventHook<EventType>
+    public createEventsHook (): UseEventHook<EventType>
 
     protected emit<Event extends keyof EventType>(event: Event, data: EventType[Event]): void;
 }
 
 declare class Selector<DataType> {
-    createHook(): UseNotifierHook<DataType>;
+    createStateHook(): UseNotifierHook<DataType>;
 }
 
 declare function selector<ReturnedState>(selector: SelectorHandler<ReturnedState>): Selector<ReturnedState>;
