@@ -99,17 +99,15 @@ export class BaseNotifier<Data> {
             const serverStateRef = useRef(selectorRef.current(this.serverState));
             const getServerSnapshot = useCallback(() => serverStateRef.current, []);
 
-            const subscribe = useCallback((callback: () => void) => {
-                return this.#subject.subscribe((state) => {
-                    const newState = selectorRef.current(state);
+            const subscribe = useCallback((callback: () => void) => this.#subject.subscribe((state) => {
+                const newState = selectorRef.current(state);
 
-                    if (!deepCompare(clientStateRef.current, newState)) {
-                        clientStateRef.current = newState;
-                        // eslint-disable-next-line callback-return
-                        callback();
-                    }
-                });
-            }, []);
+                if (!deepCompare(clientStateRef.current, newState)) {
+                    clientStateRef.current = newState;
+                    // eslint-disable-next-line callback-return
+                    callback();
+                }
+            }), []);
 
             useEffect(() => {
                 selectorRef.current = selector;
@@ -179,5 +177,3 @@ export class BaseNotifier<Data> {
             }, {} as PublicMethods<this>);
     }
 }
-
-const factory = BaseNotifier.createFactoryHook();
